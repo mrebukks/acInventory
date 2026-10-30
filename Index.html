@@ -1,0 +1,1483 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AC Inventory For IITA Abuja FMS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: "#f0f9ff",
+                500: "#06b6d4",
+                600: "#0891b2",
+                700: "#0e7490",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-full flex flex-col bg-slate-950 text-slate-100 antialiased">
+    <!-- Header Banner -->
+    <header
+      class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="p-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl">
+            <i
+              class="fa-solid font-bold fa-fan text-2xl animate-spin"
+              style="animation-duration: 8s"></i>
+          </div>
+          <div>
+            <h1
+              class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              Facility AC Inventory
+              <span
+                class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                >Live Analytics</span
+              >
+            </h1>
+            <p class="text-xs text-slate-400">
+              Campus-wide Air Conditioner Tracking & Maintenance Data
+            </p>
+          </div>
+        </div>
+
+        <!-- Header Action Controls -->
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <button
+            id="btnExport"
+            onclick="exportCSV()"
+            class="flex-1 sm:flex-none text-xs font-medium px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition duration-150 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-file-csv text-emerald-400"></i> Export CSV
+          </button>
+          <button
+            onclick="resetFilters()"
+            class="flex-1 sm:flex-none text-xs font-medium px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition duration-150 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-rotate-left"></i> Reset Filters
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main
+      class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <!-- KPI Summary Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total AC Units -->
+        <div
+          class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex items-center justify-between">
+          <div>
+            <p
+              class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Total AC Units
+            </p>
+            <h3 id="statTotal" class="text-3xl font-extrabold text-white mt-1">
+              0
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Across all facilities</p>
+          </div>
+          <div
+            class="p-3 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl">
+            <i class="fa-solid fa-snowflake text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- Largest Inventory Location -->
+        <div
+          class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex items-center justify-between">
+          <div>
+            <p
+              class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Top Building
+            </p>
+            <h3
+              id="statTopBuilding"
+              class="text-xl font-bold text-white mt-1 truncate max-w-[150px]">
+              -
+            </h3>
+            <p
+              id="statTopBuildingCount"
+              class="text-xs text-cyan-400 font-medium mt-1">
+              0 Units
+            </p>
+          </div>
+          <div
+            class="p-3 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-xl">
+            <i class="fa-solid fa-building text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- Most Common Capacity -->
+        <div
+          class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex items-center justify-between">
+          <div>
+            <p
+              class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Dominant Rating
+            </p>
+            <h3
+              id="statDominantHP"
+              class="text-3xl font-extrabold text-white mt-1">
+              -
+            </h3>
+            <p
+              id="statDominantHPShare"
+              class="text-xs text-indigo-400 font-medium mt-1">
+              0% of fleet
+            </p>
+          </div>
+          <div
+            class="p-3 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl">
+            <i class="fa-solid fa-bolt text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- Inverter / Modern Units -->
+        <div
+          class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex items-center justify-between">
+          <div>
+            <p
+              class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Inverter / R410
+            </p>
+            <h3
+              id="statEcoUnits"
+              class="text-3xl font-extrabold text-emerald-400 mt-1">
+              0
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Energy-efficient systems</p>
+          </div>
+          <div
+            class="p-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl">
+            <i class="fa-solid fa-leaf text-2xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Visualization Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Chart 1: Units by Building (Horizontal Bar) -->
+        <div
+          class="lg:col-span-2 p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-semibold text-white">
+                Units per Building
+              </h2>
+              <p class="text-xs text-slate-400">
+                Distribution of air conditioners sorted by quantity
+              </p>
+            </div>
+            <span
+              class="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-medium"
+              >Ranked List</span
+            >
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="buildingChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Capacity Breakdown (Doughnut) -->
+        <div
+          class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-semibold text-white">
+                Capacity Distribution
+              </h2>
+              <p class="text-xs text-slate-400">Breakdown by Horsepower (HP)</p>
+            </div>
+            <i class="fa-solid fa-chart-pie text-slate-500"></i>
+          </div>
+          <div class="relative h-72 w-full flex items-center justify-center">
+            <canvas id="capacityChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Data Section -->
+      <div
+        class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+        <!-- Filter Bar -->
+        <div
+          class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="text-base font-semibold text-white">
+              Detailed Inventory Records
+            </h2>
+            <p class="text-xs text-slate-400">
+              Search, filter, and review each individual AC unit
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Building Filter Select -->
+            <div class="relative min-w-[140px] flex-1 sm:flex-none">
+              <select
+                id="filterBuilding"
+                onchange="applyFilters()"
+                class="w-full bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-cyan-500">
+                <option value="ALL">All Buildings</option>
+              </select>
+            </div>
+
+            <!-- Capacity Filter Select -->
+            <div class="relative min-w-[120px] flex-1 sm:flex-none">
+              <select
+                id="filterCapacity"
+                onchange="applyFilters()"
+                class="w-full bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-cyan-500">
+                <option value="ALL">All Capacities</option>
+                <option value="1hp">1.0 HP</option>
+                <option value="1.5hp">1.5 HP</option>
+                <option value="2hp">2.0 HP</option>
+              </select>
+            </div>
+
+            <!-- Refrigerant Filter Select -->
+            <div class="relative min-w-[130px] flex-1 sm:flex-none">
+              <select
+                id="filterRefrigerant"
+                onchange="applyFilters()"
+                class="w-full bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-cyan-500">
+                <option value="ALL">All Refrigerants</option>
+                <option value="Inverter / R410">Inverter / R410</option>
+                <option value="Inverter">Inverter</option>
+                <option value="R22">R22 Engine</option>
+                <option value="Standard">Standard</option>
+              </select>
+            </div>
+
+            <!-- Text Search Box -->
+            <div class="relative min-w-[180px] flex-1 sm:flex-none">
+              <i
+                class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+              <input
+                id="searchInput"
+                type="text"
+                onkeyup="applyFilters()"
+                placeholder="Search location..."
+                class="w-full bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 pl-8 pr-3 py-2 focus:outline-none focus:border-cyan-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr
+                class="border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                <th class="py-3 px-4">#</th>
+                <th class="py-3 px-4">Building / Section</th>
+                <th class="py-3 px-4">Specific Location</th>
+                <th class="py-3 px-4">Capacity</th>
+                <th class="py-3 px-4">Refrigerant / Engine Type</th>
+                <th class="py-3 px-4 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody
+              id="inventoryTableBody"
+              class="divide-y divide-slate-800/60 text-slate-300">
+              <!-- Dynamic rows will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table Footer Stats & Pagination Info -->
+        <div
+          class="flex flex-col sm:flex-row items-center justify-between pt-3 text-xs text-slate-400 gap-2">
+          <div id="tableRecordCount">Showing 0 of 0 records</div>
+          <div class="flex items-center gap-2">
+            <span
+              class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Active Dataset Synchronized</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="border-t border-slate-800 bg-slate-900 py-4 text-center text-xs text-slate-500">
+      Facility Equipment & Inventory Management System &bull; Interactive
+      Analytics
+      <p>
+        Developed by
+        <a href="http://bukassonportfolio.netlify.app/">Ebuka Obi</a>
+      </p>
+    </footer>
+
+    <!-- Application Logic JavaScript -->
+    <script>
+      // Complete Raw Dataset
+      const acInventory = [
+        // Canteen
+        {
+          building: "Canteen",
+          location: "EventHall",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "EventHall",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "EventHall",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "EventHall",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "EventHall",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "EventHall",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "Overflow",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "Server Room",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Canteen",
+          location: "Kitchen",
+          capacity: "2hp",
+          refrigerant: "Inverter",
+        },
+
+        // Guest House
+        {
+          building: "Guest House",
+          location: "Room 1",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Room 2",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Room 3",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Room 4",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Room 5",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Room 6",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Room 7",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Passage",
+          capacity: "2hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Living Room",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Living Room",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Kitchen",
+          capacity: "1.5hp",
+          refrigerant: "Inverter / R410",
+        },
+        {
+          building: "Guest House",
+          location: "Staff Room",
+          capacity: "1hp",
+          refrigerant: "Inverter / R410",
+        },
+
+        // Hill Top
+        {
+          building: "Hill Top",
+          location: "Office 1",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Hill Top",
+          location: "Office 2",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Hill Top",
+          location: "Office 3",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Hill Top",
+          location: "Office 4",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Hill Top",
+          location: "Office 5",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Hill Top",
+          location: "Office 6",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+
+        // Yam block
+        {
+          building: "Yam Block",
+          location: "Office 1",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Yam Block",
+          location: "Office 2",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Yam Block",
+          location: "Office 3",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Yam Block",
+          location: "Office 4",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Yam Block",
+          location: "Office 5",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+        {
+          building: "Yam Block",
+          location: "Kitchen",
+          capacity: "1hp",
+          refrigerant: "R22",
+        },
+
+        // Admin Block
+        {
+          building: "Admin Block",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Office 1",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Office 2",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Office 2",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Office 3",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Office 4",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Office 5",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Kitchen",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Admin Block",
+          location: "Passage",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+
+        // SAH Lab
+        {
+          building: "SAH Lab",
+          location: "Unspecified",
+          capacity: "1hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "SAH Lab",
+          location: "Unspecified",
+          capacity: "1hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "SAH Lab",
+          location: "Unspecified",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "SAH Lab",
+          location: "Unspecified",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "SAH Lab",
+          location: "Unspecified",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "SAH Lab",
+          location: "Unspecified",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+
+        // IRS Residence
+        {
+          building: "IRS Residence",
+          location: "Room 1",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "IRS Residence",
+          location: "Room 2",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "IRS Residence",
+          location: "Living Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+
+        // Prossiva cold store
+        {
+          building: "Prossiva Cold Store",
+          location: "Unspecified",
+          capacity: "1hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Prossiva Cold Store",
+          location: "Unspecified",
+          capacity: "1hp",
+          refrigerant: "Standard",
+        },
+
+        // Maize store
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Maize Store",
+          location: "Store",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+
+        // Yam Barn
+        {
+          building: "Yam Barn",
+          location: "Unspecified",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Yam Barn",
+          location: "Unspecified",
+          capacity: "1.5hp",
+          refrigerant: "R22",
+        },
+
+        // Farm block
+        {
+          building: "Farm Block",
+          location: "RFU Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "Cleaner Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "I.T / Server Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "Drivers",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "Drivers",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "Corpers",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "Cassava Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "Seed Store",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Farm Block",
+          location: "Seed Store",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+
+        // YTC
+        {
+          building: "YTC",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Finance Office",
+          capacity: "1hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Finance Office",
+          capacity: "1hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "I-Youth",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "I-Youth",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Reception",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Kitchen",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Enable TAAT",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Training Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Training Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Training Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Training Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Visiting Area",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "IWMI",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Dr. Tarawale Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Rice Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Communications Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "FCTA Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Africa Wheat Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Visitor Scientist Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "ICT Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Dr Oyahkilome Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Prof Egesi Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Dr Aline Office",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Board Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Board Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Head of Station",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "YTC",
+          location: "Executive Assistant",
+          capacity: "1hp",
+          refrigerant: "Standard",
+        },
+
+        // Tissue Culture
+        {
+          building: "Tissue Culture",
+          location: "Reception",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Passage",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "HarvestPlus",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "HarvestPlus",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "HarvestPlus",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Kitchen",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 2",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 4",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 6",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "ICT / Server Room",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 9",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 8",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 8",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 11",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 11",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Staircase",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Reception Upstairs",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Passage Upstairs",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Conference Hall",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 18",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 16",
+          capacity: "2hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 15",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 15",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 12",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 14",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 13",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 13",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+        {
+          building: "Tissue Culture",
+          location: "Room 10",
+          capacity: "1.5hp",
+          refrigerant: "Standard",
+        },
+      ];
+
+      let buildingChartInstance = null;
+      let capacityChartInstance = null;
+
+      // Initialize Dashboard
+      window.addEventListener("DOMContentLoaded", () => {
+        populateBuildingDropdown();
+        computeOverviewKPIs();
+        renderCharts();
+        renderTable(acInventory);
+      });
+
+      // Populate Building Selector
+      function populateBuildingDropdown() {
+        const select = document.getElementById("filterBuilding");
+        const buildings = [
+          ...new Set(acInventory.map((item) => item.building)),
+        ].sort();
+        buildings.forEach((b) => {
+          const opt = document.createElement("option");
+          opt.value = b;
+          opt.textContent = b;
+          select.appendChild(opt);
+        });
+      }
+
+      // Compute Summary KPIs
+      function computeOverviewKPIs() {
+        document.getElementById("statTotal").textContent = acInventory.length;
+
+        // Group by building to find top location
+        const buildingCounts = acInventory.reduce((acc, curr) => {
+          acc[curr.building] = (acc[curr.building] || 0) + 1;
+          return acc;
+        }, {});
+
+        let topBuilding = "";
+        let maxBuildingCount = 0;
+        for (const [b, count] of Object.entries(buildingCounts)) {
+          if (count > maxBuildingCount) {
+            maxBuildingCount = count;
+            topBuilding = b;
+          }
+        }
+        document.getElementById("statTopBuilding").textContent = topBuilding;
+        document.getElementById("statTopBuildingCount").textContent =
+          `${maxBuildingCount} AC Units`;
+
+        // Capacity breakdown
+        const hpCounts = acInventory.reduce((acc, curr) => {
+          acc[curr.capacity] = (acc[curr.capacity] || 0) + 1;
+          return acc;
+        }, {});
+
+        let topHP = "";
+        let maxHPCount = 0;
+        for (const [hp, count] of Object.entries(hpCounts)) {
+          if (count > maxHPCount) {
+            maxHPCount = count;
+            topHP = hp;
+          }
+        }
+        const pctHP = ((maxHPCount / acInventory.length) * 100).toFixed(1);
+        document.getElementById("statDominantHP").textContent = topHP;
+        document.getElementById("statDominantHPShare").textContent =
+          `${pctHP}% of total units`;
+
+        // Eco / Inverter Count
+        const ecoCount = acInventory.filter(
+          (i) =>
+            i.refrigerant.toLowerCase().includes("inverter") ||
+            i.refrigerant.toLowerCase().includes("r410"),
+        ).length;
+        document.getElementById("statEcoUnits").textContent = ecoCount;
+      }
+
+      // Render Chart.js Visualizations
+      function renderCharts() {
+        // 1. Horizontal Bar Chart for Buildings
+        const buildingCounts = acInventory.reduce((acc, curr) => {
+          acc[curr.building] = (acc[curr.building] || 0) + 1;
+          return acc;
+        }, {});
+
+        // Sort buildings descending by count
+        const sortedBuildings = Object.entries(buildingCounts).sort(
+          (a, b) => b[1] - a[1],
+        );
+
+        const buildingLabels = sortedBuildings.map((item) => item[0]);
+        const buildingData = sortedBuildings.map((item) => item[1]);
+
+        const ctxBuilding = document
+          .getElementById("buildingChart")
+          .getContext("2d");
+        buildingChartInstance = new Chart(ctxBuilding, {
+          type: "bar",
+          data: {
+            labels: buildingLabels,
+            datasets: [
+              {
+                label: "Total AC Units",
+                data: buildingData,
+                backgroundColor: "rgba(6, 182, 212, 0.75)",
+                borderColor: "#06b6d4",
+                borderWidth: 1.5,
+                borderRadius: 6,
+                hoverBackgroundColor: "#0891b2",
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "#0f172a",
+                titleColor: "#fff",
+                bodyColor: "#38bdf8",
+                borderColor: "#334155",
+                borderWidth: 1,
+                padding: 10,
+              },
+            },
+            scales: {
+              x: {
+                grid: { color: "rgba(255, 255, 255, 0.05)" },
+                ticks: { color: "#94a3b8", font: { size: 11 } },
+              },
+              y: {
+                grid: { display: false },
+                ticks: { color: "#e2e8f0", font: { size: 11, weight: "500" } },
+              },
+            },
+          },
+        });
+
+        // 2. Capacity Doughnut Chart
+        const hpCounts = acInventory.reduce((acc, curr) => {
+          acc[curr.capacity] = (acc[curr.capacity] || 0) + 1;
+          return acc;
+        }, {});
+
+        const ctxCapacity = document
+          .getElementById("capacityChart")
+          .getContext("2d");
+        capacityChartInstance = new Chart(ctxCapacity, {
+          type: "doughnut",
+          data: {
+            labels: Object.keys(hpCounts),
+            datasets: [
+              {
+                data: Object.values(hpCounts),
+                backgroundColor: ["#6366f1", "#06b6d4", "#10b981"],
+                borderColor: "#0f172a",
+                borderWidth: 2,
+                hoverOffset: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { color: "#cbd5e1", font: { size: 12 }, padding: 16 },
+              },
+              tooltip: {
+                backgroundColor: "#0f172a",
+                borderColor: "#334155",
+                borderWidth: 1,
+                padding: 10,
+              },
+            },
+            cutout: "68%",
+          },
+        });
+      }
+
+      // Render Data Table
+      function renderTable(data) {
+        const tbody = document.getElementById("inventoryTableBody");
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+          tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 text-center text-slate-500">
+              <i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>
+              No AC units match the selected filters.
+            </td>
+          </tr>
+        `;
+          document.getElementById("tableRecordCount").textContent =
+            "Showing 0 records";
+          return;
+        }
+
+        data.forEach((item, index) => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-800/40 transition duration-150";
+
+          // Style Refrigerant Badges
+          let refBadge =
+            '<span class="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-300 border border-slate-700">Standard</span>';
+          if (item.refrigerant.includes("Inverter")) {
+            refBadge =
+              '<span class="px-2 py-0.5 rounded text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><i class="fa-solid fa-leaf text-[10px] mr-1"></i>Inverter / R410</span>';
+          } else if (item.refrigerant === "R22") {
+            refBadge =
+              '<span class="px-2 py-0.5 rounded text-[11px] bg-amber-500/10 text-amber-400 border border-amber-500/20">R22 Engine</span>';
+          }
+
+          tr.innerHTML = `
+          <td class="py-3 px-4 text-slate-500 font-mono">${index + 1}</td>
+          <td class="py-3 px-4 font-semibold text-white">${item.building}</td>
+          <td class="py-3 px-4 text-slate-300">${item.location}</td>
+          <td class="py-3 px-4 font-medium text-cyan-400">${item.capacity}</td>
+          <td class="py-3 px-4">${refBadge}</td>
+          <td class="py-3 px-4 text-right">
+            <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+            </span>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("tableRecordCount").textContent =
+          `Showing ${data.length} of ${acInventory.length} records`;
+      }
+
+      // Filter Logic
+      function applyFilters() {
+        const buildingVal = document.getElementById("filterBuilding").value;
+        const capacityVal = document.getElementById("filterCapacity").value;
+        const refrigerantVal =
+          document.getElementById("filterRefrigerant").value;
+        const searchVal = document
+          .getElementById("searchInput")
+          .value.toLowerCase()
+          .trim();
+
+        const filtered = acInventory.filter((item) => {
+          const matchBuilding =
+            buildingVal === "ALL" || item.building === buildingVal;
+          const matchCapacity =
+            capacityVal === "ALL" || item.capacity === capacityVal;
+          const matchRefrigerant =
+            refrigerantVal === "ALL" || item.refrigerant === refrigerantVal;
+          const matchSearch =
+            searchVal === "" ||
+            item.location.toLowerCase().includes(searchVal) ||
+            item.building.toLowerCase().includes(searchVal);
+
+          return (
+            matchBuilding && matchCapacity && matchRefrigerant && matchSearch
+          );
+        });
+
+        renderTable(filtered);
+      }
+
+      // Reset Filters
+      function resetFilters() {
+        document.getElementById("filterBuilding").value = "ALL";
+        document.getElementById("filterCapacity").value = "ALL";
+        document.getElementById("filterRefrigerant").value = "ALL";
+        document.getElementById("searchInput").value = "";
+        renderTable(acInventory);
+      }
+
+      // Export CSV Utility
+      function exportCSV() {
+        let csvContent =
+          "data:text/csv;charset=utf-8,Building,Location,Capacity,Refrigerant\n";
+        acInventory.forEach((row) => {
+          csvContent += `"${row.building}","${row.location}","${row.capacity}","${row.refrigerant}"\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "AC_Inventory_Data.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    </script>
+  </body>
+</html>
